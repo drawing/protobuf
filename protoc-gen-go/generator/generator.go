@@ -1350,7 +1350,8 @@ func (g *Generator) generateImports() {
 		if _, ok := g.usedPackages[pname]; !ok {
 			pname = "_"
 		}
-		g.P("import ", pname, " ", strconv.Quote(importPath))
+		// g.P("import ", pname, " ", strconv.Quote(importPath))
+		g.P("import \"../", pname, "\"")
 	}
 	g.P()
 	// TODO: may need to worry about uniqueness across plugins
