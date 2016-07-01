@@ -4,11 +4,29 @@ import (
 	"flag"
 	"go/parser"
 	"go/token"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 )
+
+func CopyFile(src, des string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	desFile, err := os.Create(des)
+	if err != nil {
+		return err
+	}
+	defer desFile.Close()
+
+	_, err = io.Copy(desFile, srcFile)
+	return err
+}
 
 func main() {
 	var inPath string
@@ -43,10 +61,10 @@ func main() {
 		pbpath := inPath + "/" + name
 		tmppath := os.TempDir() + "/" + goname
 
-		task := exec.Command("protoc", "--go_out="+os.TempDir(), pbpath)
-		err := task.Run()
+		out, err := exec.Command("protoc", "--proto_path="+inPath, "--go_out="+os.TempDir(), pbpath).Output()
 		if err != nil {
-			log.Fatalln("exec protoc failed:", err)
+			log.Println("exec protoc failed:", err)
+			log.Fatalln(out)
 		}
 
 		fset := token.NewFileSet()
@@ -61,7 +79,10 @@ func main() {
 
 		os.Mkdir(outPath+"/"+pkgname, os.ModePerm)
 
-		os.Rename(tmppath, outPath+"/"+goname)
+		err = CopyFile(tmppath, outPath+"/"+pkgname+"/"+goname)
+		if err != nil {
+			log.Fatalln("copy failed:", err)
+		}
 	}
 
 	log.Println("end")
